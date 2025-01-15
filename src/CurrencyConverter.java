@@ -2,6 +2,7 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
 
+
 public class CurrencyConverter {
     private static final double BGN_TO_EUR = 0.51;
     private static final double BGN_TO_USD = 0.53;
