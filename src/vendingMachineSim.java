@@ -14,19 +14,20 @@ public class vendingMachineSim {
         System.out.print("Entrer balance: ");
         double balance = sc.nextInt();
         System.out.println("Balance: " + balance + "$");
-        System.out.println("Type the word Stop to quit");
         System.out.println("Num. Name  |  Price |  Quantity");
         printAll(code, name, price, quantity);
         System.out.print("Enter Num: ");
-        int num = sc.nextInt();
         String br = "";
         int numberOfItem = 0;
         int a =0;
+        int num = 0;
 
 
 
-            while(!br.equals("Stop")) {
+            while(!br.equals("Y")) {
+                num = sc.nextInt();
                 for (int i : code) {
+
                     if (i == num) {
                         numberOfItem = i - 1;
                         if (balance >= price[numberOfItem]) {
@@ -40,8 +41,11 @@ public class vendingMachineSim {
                         }
                         quantity[numberOfItem] = quantity[numberOfItem] - a;
                         printAll(code, name, price, quantity);
-                        System.out.print("Enter Num: ");
+                        System.out.println("Do you want to quit? (Y/N): ");
                         br = sc.next();
+                        System.out.print("Enter Num: ");
+
+
                     }
                 }
 
