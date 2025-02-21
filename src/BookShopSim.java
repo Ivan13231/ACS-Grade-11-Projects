@@ -15,6 +15,7 @@ public class BookShopSim {
         double balance = sc.nextInt();
         printAll(code, name);
         findAndBuyBook(name, quantity, price, balance);
+        System.out.print("Thank you for visiting the shop!");
 
 
 
