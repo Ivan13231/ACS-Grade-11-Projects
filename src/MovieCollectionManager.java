@@ -16,7 +16,7 @@ public class MovieCollectionManager extends JFrame {
     private JTextField searchField;
 
     public MovieCollectionManager() {
-        setTitle("Movie Collection Manager 🎬🍿");
+        setTitle("Movie Collection Manager");
         setSize(800, 550);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLayout(new BorderLayout(10, 10));
@@ -29,7 +29,7 @@ public class MovieCollectionManager extends JFrame {
         JPanel addPanel = new JPanel();
         titleField = new JTextField(15);
         genreBox = new JComboBox<>(new String[]{"Action", "Comedy", "Horror", "Drama", "Sci-Fi", "Romance"});
-        JButton addButton = new JButton("Add Movie 🎥");
+        JButton addButton = new JButton("Add Movie");
 
         addPanel.add(new JLabel("Title:"));
         addPanel.add(titleField);
@@ -40,7 +40,7 @@ public class MovieCollectionManager extends JFrame {
         // SEARCH PANEL
         JPanel searchPanel = new JPanel();
         searchField = new JTextField(15);
-        JButton searchButton = new JButton("Search 🔍");
+        JButton searchButton = new JButton("Search");
 
         searchPanel.add(new JLabel("Search by Title:"));
         searchPanel.add(searchField);
@@ -59,9 +59,9 @@ public class MovieCollectionManager extends JFrame {
 
         // ----------- BOTTOM PANEL (Sort + Count) -----------
         JPanel controlPanel = new JPanel();
-        JButton sortTitleBtn = new JButton("Sort by Title 🔤");
-        JButton sortGenreBtn = new JButton("Sort by Genre 🎭");
-        JButton countBtn = new JButton("Count Movies 🎬");
+        JButton sortTitleBtn = new JButton("Sort by Title");
+        JButton sortGenreBtn = new JButton("Sort by Genre");
+        JButton countBtn = new JButton("Count Movies");
         countLabel = new JLabel("Total: 0");
 
         controlPanel.add(sortTitleBtn);
