@@ -1,12 +1,5 @@
 import javax.swing.*;
 import java.awt.*;
-import java.util.Arrays;
-import java.util.List;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-
-import javax.swing.*;
-import java.awt.*;
 
 class GUI {
     private JFrame frame;
@@ -16,6 +9,12 @@ class GUI {
     private JComboBox<String> tyreComboBox;
     private JButton simulateLapButton;
     private String teamYouWorkFor;
+    private int lapCounter = 0;
+    private JLabel lapCounterLabel;
+
+
+
+
 
     private static final String[] TYRE_TYPES = {"Hard (H)", "Medium (M)", "Soft (S)"};
 
@@ -24,6 +23,12 @@ class GUI {
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.setSize(600, 400);
         frame.setLayout(new BorderLayout(10, 10));
+
+        lapCounterLabel = new JLabel("Lap: 0", SwingConstants.CENTER);
+        lapCounterLabel.setFont(new Font("Arial", Font.PLAIN, 16));
+        frame.add(lapCounterLabel, BorderLayout.SOUTH);
+
+
 
         // Randomly pick your team
         int randomIndex = (int) (Math.random() * manufacturers.length);
@@ -101,6 +106,7 @@ class GUI {
 
         // Pit button toggles tyreComboBox enabled and sets current tyre selection
         pitButton.addActionListener(e -> {
+
             Manufacturer selectedCar = carList.getSelectedValue();
             if (selectedCar == null || !selectedCar.getBrand().equals(teamYouWorkFor)) {
                 return;  // Only allow your team's car
@@ -136,10 +142,62 @@ class GUI {
             carList.repaint();
         });
 
+
         // Simulate lap times for all cars
         simulateLapButton.addActionListener(e -> {
             StringBuilder result = new StringBuilder("Lap Times:\n\n");
 
+            lapCounter++;
+            lapCounterLabel.setText("Lap: " + lapCounter);
+            for (int i = 0; i < carListModel.size(); i++) {
+                Manufacturer m = carListModel.get(i);
+                Tyre tyre = m.getTyre();
+                tyre.life--;
+                if (m.getBrand().equals(teamYouWorkFor)) {
+
+                    if (tyre.getLife() <= 0) {
+                            JOptionPane.showMessageDialog(frame,
+                                    "Your car's tyre has worn out! New tyre compound assigned: ",
+                                    "Tyre Change Notification",
+                                    JOptionPane.INFORMATION_MESSAGE);
+
+
+                        m.pitPenalty = 4;
+                    }
+
+                }
+
+                else {
+                    if (tyre.getLife() <= 0) {
+                        Tyre newTyre = getRandomTyre();
+                        m.setTyre(newTyre);
+                        m.pitPenalty = 4;
+                    }
+                }
+
+
+                }
+
+
+
+
+
+
+
+
+            if (lapCounter >= 30) {
+                JOptionPane.showMessageDialog(frame, "Race is over! Please restart the application.", "Race Finished", JOptionPane.INFORMATION_MESSAGE);
+                StringBuilder podium = new StringBuilder("🏁 Race Finished!\n\nTop 3:\n");
+                podium.append("1st: ").append(carListModel.get(0).getBrand()).append("\n");
+                podium.append("2nd: ").append(carListModel.get(1).getBrand()).append("\n");
+                podium.append("3rd: ").append(carListModel.get(2).getBrand()).append("\n");
+
+                JOptionPane.showMessageDialog(frame, podium.toString(), "Final Standings", JOptionPane.INFORMATION_MESSAGE);
+                return;
+            }
+
+
+            // 1. Calculate lap times and store in each Manufacturer
             for (int i = 0; i < carListModel.size(); i++) {
                 Manufacturer m = carListModel.get(i);
                 int speed = m.getSpeed();
@@ -152,18 +210,62 @@ class GUI {
                 double penalty = weight * 0.05;
                 double randomness = Math.random() * 4 - 2;  // ±2 seconds randomness
 
+
                 double lapTime = baseTime - performance + penalty + randomness;
+
+                if(m.pitPenalty > 0){
+                    lapTime = lapTime + 5;
+                    m.pitPenalty--;
+                }
+
+
                 lapTime = Math.round(lapTime * 100.0) / 100.0;
 
-                result.append(m.getBrand()).append(": ").append(lapTime).append(" sec\n");
+                m.lapTime = lapTime; // Store in object
+            }
+
+            // 2. Overtake logic: compare adjacent cars
+            for (int i = carListModel.size() - 1; i > 0; i--) {
+                Manufacturer behind = carListModel.get(i);
+                Manufacturer ahead = carListModel.get(i - 1);
+
+                double timeDiff = ahead.lapTime - behind.lapTime;
+
+                if (timeDiff > 1.5) { // Must be significantly faster
+                    double overtakeChance = Math.min(0.9, 0.1 + timeDiff * 0.3); // More gap = more chance
+                    double roll = Math.random();
+                    if (roll < overtakeChance) {
+                        // Swap in model
+                        carListModel.set(i, ahead);
+                        carListModel.set(i - 1, behind);
+                        result.append("[OVERTAKE] ").append(behind.getBrand())
+                                .append(" overtook ").append(ahead.getBrand())
+                                .append(" (Δ ").append(String.format("%.2f", timeDiff)).append("s)\n");
+                    }
+                }
+            }
+
+            // 3. Show results after possible overtakes
+            result.append("\nUpdated Positions:\n\n");
+            for (int i = 0; i < carListModel.size(); i++) {
+                Manufacturer m = carListModel.get(i);
+                result.append((i + 1)).append(". ").append(m.getBrand())
+                        .append(" - Lap Time: ").append(m.lapTime).append(" sec\n");
             }
 
             JOptionPane.showMessageDialog(frame, result.toString(), "Simulated Lap Times", JOptionPane.INFORMATION_MESSAGE);
+            carList.repaint(); // Update GUI display order
+
         });
+
+
 
         frame.setLocationRelativeTo(null);
         frame.setVisible(true);
     }
+
+
+
 
     private static class ManufacturerCellRenderer extends JLabel implements ListCellRenderer<Manufacturer> {
         @Override
@@ -188,27 +290,35 @@ class GUI {
             return this;
         }
     }
+
+    private static Tyre getRandomTyre() {
+        char[] tyreTypes = {'H', 'M', 'S'};
+        int randomIndex = (int) (Math.random() * tyreTypes.length);
+        return new Tyre(tyreTypes[randomIndex], 15, 15);
+    }
 }
 
 
 class FinalProject  {
     public static void main(String[] args) {
 
-        Manufacturer mercedes = new Manufacturer("Mercedes", 0);
+
+
+        Manufacturer mercedes = new Manufacturer("Mercedes", 0, getRandomTyre());
         mercedes.weight = 690;
-        Manufacturer redBull = new Manufacturer("Red Bull", 0);
+        Manufacturer redBull = new Manufacturer("Red Bull", 0, getRandomTyre());
         redBull.aero = 20;
-        Manufacturer mclaren = new Manufacturer("McLaren", 0);
+        Manufacturer mclaren = new Manufacturer("McLaren", 0, getRandomTyre());
         mclaren.aero = 18;
         mclaren.speed = 18;
-        Manufacturer ferrari = new Manufacturer("Ferrari", 0);
-        ferrari.speed = 20; // Give Ferrari more speed
-        Manufacturer astonMartin = new Manufacturer("Aston Martin", 0);
-        Manufacturer alpine = new Manufacturer("Alpine", 0);
-        Manufacturer williams = new Manufacturer("Williams", 0);
-        Manufacturer haas = new Manufacturer("Haas", 0);
-        Manufacturer racingBulls = new Manufacturer("Racing Bulls", 0);
-        Manufacturer stakeSauber = new Manufacturer("Stake Sauber", 0);
+        Manufacturer ferrari = new Manufacturer("Ferrari", 0, getRandomTyre());
+        ferrari.speed = 20;
+        Manufacturer astonMartin = new Manufacturer("Aston Martin", 0, getRandomTyre());
+        Manufacturer alpine = new Manufacturer("Alpine", 0, getRandomTyre());
+        Manufacturer williams = new Manufacturer("Williams", 0, getRandomTyre());
+        Manufacturer haas = new Manufacturer("Haas", 0, getRandomTyre());
+        Manufacturer racingBulls = new Manufacturer("Racing Bulls", 0, getRandomTyre());
+        Manufacturer stakeSauber = new Manufacturer("Stake Sauber", 0, getRandomTyre());
 
         Manufacturer[] manufacturers = new Manufacturer[] {
                 mercedes,
@@ -232,6 +342,13 @@ class FinalProject  {
 
 
     }
+
+    private static Tyre getRandomTyre() {
+        char[] tyreTypes = {'H', 'M', 'S'};
+        int randomIndex = (int) (Math.random() * tyreTypes.length);
+        return new Tyre(tyreTypes[randomIndex], 15, 15);
+    }
+
 }
 
 class F1 {
@@ -239,12 +356,14 @@ class F1 {
     int aero;
     int weight;
     Tyre tyre;
+    int pitPenalty;
 
-    public F1(int speed, int aero, int weight, Tyre tyre) {
+    public F1(int speed, int aero, int weight, Tyre tyre,  int pitPenalty) {
         this.speed = speed;
         this.aero = aero;
         this.weight = weight;
         this.tyre = tyre;
+        this.pitPenalty = pitPenalty;
     }
 
     public int getSpeed() {
@@ -264,8 +383,8 @@ class F1 {
 class Manufacturer extends F1 {
     String brand;
     double lapTime;
-    public Manufacturer (String brand,double lapTime) {
-        super(15,15,700, new Tyre('S', 5, 15));
+    public Manufacturer (String brand,double lapTime, Tyre tyre) {
+        super(15,15,700, tyre, 0);
         this.brand = brand;
         this.lapTime = lapTime;
 
