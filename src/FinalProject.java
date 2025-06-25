@@ -1,5 +1,10 @@
 import javax.swing.*;
 import java.awt.*;
+import java.io.FileWriter;
+import java.io.BufferedReader;
+import java.io.FileReader;
+import java.io.IOException;
+
 
 class GUI {
     private JFrame frame;
@@ -11,14 +16,18 @@ class GUI {
     private String teamYouWorkFor;
     private int lapCounter = 0;
     private JLabel lapCounterLabel;
-
-
-
-
-
+    private static final String LOG_FILENAME = "race_log.txt";
+    private JButton showLogButton;
+    private static final String LOG_FILE = "race_log.txt";
     private static final String[] TYRE_TYPES = {"Hard (H)", "Medium (M)", "Soft (S)"};
 
     public void createAndShowGUI(Manufacturer[] manufacturers) {
+        try (FileWriter writer = new FileWriter(LOG_FILE, false)) {  // false = overwrite mode
+            writer.write("");  // write empty string, clearing the file
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
         frame = new JFrame("F1 Race");
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.setSize(600, 400);
@@ -28,7 +37,8 @@ class GUI {
         lapCounterLabel.setFont(new Font("Arial", Font.PLAIN, 16));
         frame.add(lapCounterLabel, BorderLayout.SOUTH);
 
-
+        showLogButton = new JButton("Show Race Log");
+        showLogButton.setAlignmentX(Component.CENTER_ALIGNMENT);
 
         // Randomly pick your team
         int randomIndex = (int) (Math.random() * manufacturers.length);
@@ -101,6 +111,8 @@ class GUI {
         rightPanel.add(tyreComboBox);
         rightPanel.add(Box.createRigidArea(new Dimension(0, 15)));
         rightPanel.add(simulateLapButton);
+        rightPanel.add(Box.createRigidArea(new Dimension(0, 15)));
+        rightPanel.add(showLogButton);
 
         frame.add(rightPanel, BorderLayout.EAST);
 
@@ -179,24 +191,6 @@ class GUI {
                 }
 
 
-
-
-
-
-
-
-            if (lapCounter >= 30) {
-                JOptionPane.showMessageDialog(frame, "Race is over! Please restart the application.", "Race Finished", JOptionPane.INFORMATION_MESSAGE);
-                StringBuilder podium = new StringBuilder("🏁 Race Finished!\n\nTop 3:\n");
-                podium.append("1st: ").append(carListModel.get(0).getBrand()).append("\n");
-                podium.append("2nd: ").append(carListModel.get(1).getBrand()).append("\n");
-                podium.append("3rd: ").append(carListModel.get(2).getBrand()).append("\n");
-
-                JOptionPane.showMessageDialog(frame, podium.toString(), "Final Standings", JOptionPane.INFORMATION_MESSAGE);
-                return;
-            }
-
-
             // 1. Calculate lap times and store in each Manufacturer
             for (int i = 0; i < carListModel.size(); i++) {
                 Manufacturer m = carListModel.get(i);
@@ -214,7 +208,7 @@ class GUI {
                 double lapTime = baseTime - performance + penalty + randomness;
 
                 if(m.pitPenalty > 0){
-                    lapTime = lapTime + 5;
+                    lapTime = lapTime + 8;
                     m.pitPenalty--;
                 }
 
@@ -222,6 +216,33 @@ class GUI {
                 lapTime = Math.round(lapTime * 100.0) / 100.0;
 
                 m.lapTime = lapTime; // Store in object
+            }
+
+            try {
+                FileWriter writer = new FileWriter(LOG_FILE, true); // true = append mode
+                writer.write("Lap " + lapCounter + ":\n");
+
+                for (int i = 0; i < carListModel.size(); i++) {
+                    Manufacturer m = carListModel.get(i);
+                    writer.write((i + 1) + ". " + m.getBrand() +
+                            " - Lap Time: " + m.lapTime + "s, Tyre: " + m.getTyre().getType() + "\n");
+                }
+
+                writer.write("\n"); // Blank line between laps
+                writer.close();
+            } catch (IOException ex) {
+                ex.printStackTrace();
+            }
+
+            if (lapCounter >= 30) {
+                JOptionPane.showMessageDialog(frame, "Race is over! Please restart the application.", "Race Finished", JOptionPane.INFORMATION_MESSAGE);
+                StringBuilder podium = new StringBuilder("🏁 Race Finished!\n\nTop 3:\n");
+                podium.append("1st: ").append(carListModel.get(0).getBrand()).append("\n");
+                podium.append("2nd: ").append(carListModel.get(1).getBrand()).append("\n");
+                podium.append("3rd: ").append(carListModel.get(2).getBrand()).append("\n");
+
+                JOptionPane.showMessageDialog(frame, podium.toString(), "Final Standings", JOptionPane.INFORMATION_MESSAGE);
+                return;
             }
 
             // 2. Overtake logic: compare adjacent cars
@@ -258,11 +279,33 @@ class GUI {
 
         });
 
+        showLogButton.addActionListener(e -> {
+            StringBuilder logContent = new StringBuilder();
+            try (BufferedReader reader = new BufferedReader(new FileReader(LOG_FILENAME))) {
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    logContent.append(line).append("\n");
+                }
+            } catch (IOException ex) {
+                logContent.append("No race log available or error reading the file.");
+            }
+            JTextArea textArea = new JTextArea(logContent.toString());
+            textArea.setEditable(false);
+            textArea.setLineWrap(true);
+            textArea.setWrapStyleWord(true);
+            JScrollPane scrollPane = new JScrollPane(textArea);
+            scrollPane.setPreferredSize(new Dimension(500, 400));
+            JOptionPane.showMessageDialog(frame, scrollPane, "Race Log", JOptionPane.INFORMATION_MESSAGE);
+        });
+
+
 
 
         frame.setLocationRelativeTo(null);
         frame.setVisible(true);
     }
+
+
 
 
 
